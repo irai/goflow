@@ -1,4 +1,4 @@
-package workflow
+package goflow
 
 import (
 	"bytes"
@@ -18,7 +18,7 @@ const (
 	DefaultMaxEvents = 256              // Maximum number of events to buffer
 )
 
-type Workflow struct {
+type Flow struct {
 	label        string
 	tasks        map[string]ITask
 	events       map[string][]ITask
@@ -37,8 +37,8 @@ type Workflow struct {
 	stream       chan any
 }
 
-func NewWorkflow(label string) *Workflow {
-	w := &Workflow{label: label}
+func NewFlow(label string) *Flow {
+	w := &Flow{label: label}
 	w.c = make(chan event, DefaultMaxEvents)
 	w.stream = make(chan any, 16)
 	w.errorC = make(chan event, 8)
@@ -53,11 +53,11 @@ func NewWorkflow(label string) *Workflow {
 	return w
 }
 
-func (w *Workflow) SetLogLevel(level slog.Level) {
+func (w *Flow) SetLogLevel(level slog.Level) {
 	w.logLevel.Set(level)
 }
 
-func (w *Workflow) Stream() any {
+func (w *Flow) Stream() any {
 	v, ok := <-w.stream
 	if ok {
 		return v
@@ -65,7 +65,7 @@ func (w *Workflow) Stream() any {
 	return nil
 }
 
-func (w *Workflow) RenderTemplate(name string, gotmpl string, values map[string]any) (string, error) {
+func (w *Flow) RenderTemplate(name string, gotmpl string, values map[string]any) (string, error) {
 	w.mu.Lock()
 	tmpl, ok := w.templates[name]
 	w.mu.Unlock()
@@ -85,7 +85,7 @@ func (w *Workflow) RenderTemplate(name string, gotmpl string, values map[string]
 	return buf.String(), err
 }
 
-func (w *Workflow) Run(ctx context.Context, values any) (any, error) {
+func (w *Flow) Run(ctx context.Context, values any) (any, error) {
 	w.ctx = ctx
 	w.timeout = time.Now().Add(w.MaxDuration)
 	w.Emit(StartEvent, values)
@@ -137,7 +137,7 @@ var (
 	ErrInvalidInput  = errors.New("invalid input type")
 )
 
-func (w *Workflow) nextEvent() event {
+func (w *Flow) nextEvent() event {
 
 	select {
 	case ev, ok := <-w.errorC:
@@ -161,7 +161,7 @@ func (w *Workflow) nextEvent() event {
 
 }
 
-func (w *Workflow) Emit(eventID string, values any) {
+func (w *Flow) Emit(eventID string, values any) {
 	w.Logger.Debug("emitting event", "event", eventID)
 	if len(w.c) >= DefaultMaxEvents {
 		panic("max events reached. deadlock?")
@@ -169,7 +169,7 @@ func (w *Workflow) Emit(eventID string, values any) {
 	w.c <- event{ID: eventID, Values: values, Logger: w.Logger, w: w}
 }
 
-func (w *Workflow) emitError(eventID string, err error, triggerEvent *event) {
+func (w *Flow) emitError(eventID string, err error, triggerEvent *event) {
 	values := map[string]any{"error": err.Error()}
 	if triggerEvent != nil {
 		values["triggerEvent"] = triggerEvent.ID
@@ -180,7 +180,7 @@ func (w *Workflow) emitError(eventID string, err error, triggerEvent *event) {
 	w.errorC <- event{ID: eventID, Values: values, Logger: w.Logger, Error: err, w: w}
 }
 
-func (w *Workflow) worker(c <-chan event) {
+func (w *Flow) worker(c <-chan event) {
 	defer w.Logger.Warn("worker channel closed - stopping worker")
 
 	for {

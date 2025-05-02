@@ -1,4 +1,4 @@
-package workflow
+package goflow
 
 import (
 	"log/slog"
@@ -14,7 +14,7 @@ type event struct {
 	Values any
 	Error  error
 	Logger *slog.Logger
-	w      *Workflow
+	w      *Flow
 	task   ITask
 }
 

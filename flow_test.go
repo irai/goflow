@@ -1,4 +1,4 @@
-package workflow
+package goflow
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func TestWorkflow_nil(t *testing.T) {
-	w := NewWorkflow("test1")
+func TestFlow_nil(t *testing.T) {
+	w := NewFlow("test1")
 
 	type testStruct struct {
 		Name string
@@ -27,8 +27,8 @@ func TestWorkflow_nil(t *testing.T) {
 	}
 }
 
-func TestWorkflow_single(t *testing.T) {
-	w := NewWorkflow("test1")
+func TestFlow_single(t *testing.T) {
+	w := NewFlow("test1")
 
 	type testStruct struct {
 		Name string
@@ -46,8 +46,8 @@ func TestWorkflow_single(t *testing.T) {
 	}
 }
 
-func TestWorkflow_basic(t *testing.T) {
-	w := NewWorkflow("test1")
+func TestFlow_basic(t *testing.T) {
+	w := NewFlow("test1")
 
 	NewTask(w,
 		func(ctx context.Context, ev map[string]any) (map[string]any, error) {
@@ -71,8 +71,8 @@ func TestWorkflow_basic(t *testing.T) {
 	}
 }
 
-func TestWorkflow_timeout(t *testing.T) {
-	w := NewWorkflow("test1")
+func TestFlow_timeout(t *testing.T) {
+	w := NewFlow("test1")
 	w.MaxDuration = 100 * time.Millisecond
 
 	NewTask(w,
@@ -92,8 +92,8 @@ func TestWorkflow_timeout(t *testing.T) {
 	}
 }
 
-func TestWorkflow_maxtasks(t *testing.T) {
-	w := NewWorkflow("test1")
+func TestFlow_maxtasks(t *testing.T) {
+	w := NewFlow("test1")
 	w.MaxTasks = 10
 
 	NewTask(w,
@@ -113,8 +113,8 @@ func TestWorkflow_maxtasks(t *testing.T) {
 	}
 }
 
-func TestWorkflow_loop(t *testing.T) {
-	w := NewWorkflow("test1")
+func TestFlow_loop(t *testing.T) {
+	w := NewFlow("test1")
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup

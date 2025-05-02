@@ -1,4 +1,4 @@
-package workflow
+package goflow
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type Task[in, out any] struct {
 	retryPolicy string
 	// f           func(context.Context, Event) (map[string]any, error)
 	fn         Func[in, out]
-	w          *Workflow
+	w          *Flow
 	emitting   []string
 	isFlow     bool
 	concurrent bool
@@ -46,7 +46,7 @@ func methodName(f any) string {
 }
 
 // func (w *Workflow) NewTask(f func(context.Context, Event) (map[string]any, error)) *Task {
-func NewTask[In, Out any](w *Workflow, f Func[In, Out]) *Task[In, Out] {
+func NewTask[In, Out any](w *Flow, f Func[In, Out]) *Task[In, Out] {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 

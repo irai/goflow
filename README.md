@@ -2,23 +2,21 @@
 
 ## Overview
 
-The Workflow framework is a simple, event-driven abstraction for building agentic applications in Go. It provides a flexible foundation for creating complex, multi-step processes with robust control flow patterns including sequential execution, branching, looping, and concurrency.
+The Workflow framework is a simple, event-driven abstraction for building applications in Go. It provides a flexible foundation for creating complex, multi-step processes with robust control flow patterns including sequential execution, branching, looping, and concurrency.
 
-This method breaks down a large problem into smaller tasks, each handled by an LLM instance or agent. The orchestrating LLM delegates and composes responses.
-This lightweight yet powerful workflow engine allows you to:
+This method breaks down a large problem into smaller tasks.
 
 - Define task-based workflows with clear event-driven execution paths
 - Build intelligent agents that can make decisions and take actions
 - Connect multiple components in a structured, manageable way
 - Handle errors gracefully with dedicated error channels
-- Monitor execution with comprehensive logging
 
 ## Getting Started
 
 ### Installation
 
 ```bash
-go get github.com/irai/rag/workflow
+go get github.com/irai/goflow/workflow
 ```
 
 ### Creating a Simple Workflow
@@ -29,7 +27,7 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/irai/rag/workflow"
+    "github.com/irai/goflow"
 )
 
 func main() {
