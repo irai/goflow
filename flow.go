@@ -34,13 +34,11 @@ type Flow struct {
 	runningTasks int32
 	timeout      time.Time
 	ctx          context.Context
-	stream       chan any
 }
 
 func NewFlow(label string) *Flow {
 	w := &Flow{label: label}
 	w.c = make(chan event, DefaultMaxEvents)
-	w.stream = make(chan any, 16)
 	w.errorC = make(chan event, 8)
 	w.tasks = make(map[string]ITask)
 	w.events = make(map[string][]ITask)
@@ -55,14 +53,6 @@ func NewFlow(label string) *Flow {
 
 func (w *Flow) SetLogLevel(level slog.Level) {
 	w.logLevel.Set(level)
-}
-
-func (w *Flow) Stream() any {
-	v, ok := <-w.stream
-	if ok {
-		return v
-	}
-	return nil
 }
 
 func (w *Flow) RenderTemplate(name string, gotmpl string, values map[string]any) (string, error) {
