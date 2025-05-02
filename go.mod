@@ -1,4 +1,4 @@
-module github.com/irai/workflow
+module github.com/irai/goflow
 
 go 1.24.0
 

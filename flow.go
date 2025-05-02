@@ -47,6 +47,7 @@ func NewFlow(label string) *Flow {
 	w.Logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: w.logLevel})).With("workflow", w.label)
 	w.MaxTasks = DefaultMaxTasks
 	w.MaxDuration = DefaultMaxDur
+	w.SetLogLevel(slog.LevelError)
 
 	return w
 }
@@ -81,7 +82,7 @@ func (w *Flow) Run(ctx context.Context, values any) (any, error) {
 	w.Emit(StartEvent, values)
 
 	workerChan := make(chan event, 32)
-	// defer close(workerChan) // TOD: this is causing an error in the stack? why?
+	// defer close(workerChan) // TODO: this is causing an error in the stack? why?
 
 	go w.worker(workerChan)
 	go w.worker(workerChan)

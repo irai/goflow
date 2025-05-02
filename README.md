@@ -13,144 +13,65 @@ This method breaks down a large problem into smaller tasks.
 
 ## Getting Started
 
-### Installation
-
-```bash
-go get github.com/irai/goflow/workflow
-```
-
 ### Creating a Simple Workflow
+
+Here's a basic example demonstrating a simple workflow:
 
 ```go
 package main
 
 import (
-    "context"
-    "fmt"
-    "github.com/irai/goflow"
+	"context"
+	"log"
+
+	"github.com/irai/goflow"
 )
 
 func main() {
-    w := workflow.NewWorkflow("SimpleExample")
-    w.NewTask(singleShotTask).Subscribe(workflow.StartEvent)
-    ctx := context.Background()
-    result := w.Run(ctx)
-    fmt.Printf("Workflow completed with result: %v\n", result.GetString("result"))
-}
+	// Create a new workflow named "simple-example"
+	w := goflow.NewFlow("simple-example")
 
-func (h *ChatAgent) singleShotTask(ctx context.Context, ev workflow.Event, c chan<- string) error {
-	s, err := renderTemplate(h.chatTemplate, ev.Values)
-	if err != nil {
-		return "", nil, err
+	startTask := func(ctx context.Context, input string) (string, error) {
+		log.Println("Starting workflow with:", input)
+		return "Hello from Start", nil
 	}
 
-	msg := llms.TextParts(llms.ChatMessageTypeHuman, s)
-	result, _, err := h.model.GeneratContent([]llms.MessageContent{msg}, nil)
-	if err != nil {
-		return "", nil, err
+	nextTask := func(ctx context.Context, message string) (string, error) {
+		log.Println("Next task received:", message)
+		return "Finished!", nil
 	}
 
-	values := ev.Values
-	values["result"] = result
-	ev.Emit(workflow.StopEvent, values)
-	return nil
+	// Register tasks, define subscriptions and emissions
+	goflow.NewTask(w, startTask).
+		Subscribe(goflow.StartEvent). // Triggered when workflow starts
+		Emit("nextStep")             // Emits "nextStep" event on completion
+
+	goflow.NewTask(w, nextTask).
+		Subscribe("nextStep").      // Triggered by the "nextStep" event
+		Emit(goflow.StopEvent)       // Emits StopEvent to end the workflow
+
+	results, err := w.Run(context.Background(), "Initial Data")
+	if err != nil {
+		log.Fatalf("Workflow failed: %v", err)
+	}
+
+	log.Printf("Workflow finished. Results: %v", results)
 }
 
 ```
+
+For more complex examples, see the `examples` folder.
 
 ## Core Concepts
 
-### Workflows
+The framework revolves around three main components:
 
-A Workflow is the main container for your application logic. It manages the execution of tasks and the flow of events between them.
+*   **Workflow:** The central orchestrator. It holds the definition of tasks and their relationships, manages the event queue, and controls the overall execution flow. You create a workflow instance using `goflow.NewFlow("workflow-name")`.
+*   **Task:** A unit of work represented by a Go function. Each task performs a specific action. Tasks are registered within a workflow using `goflow.NewTask()`. A task function typically accepts a `context.Context` and an input data payload, and can return output data and an error.
+*   **Event:** A signal that triggers tasks. Events are strings that act as communication channels between tasks.
+    *   Tasks **subscribe** to specific events using `.Subscribe("event-name")`. When an event is emitted, all subscribed tasks are triggered concurrently (unless configured otherwise).
+    *   Tasks can **emit** new events upon completion using `.Emit("event-name")`, triggering subsequent tasks.
+    *   Special built-in events like `goflow.StartEvent` and `goflow.StopEvent` mark the beginning and end of the workflow execution.
 
-```go
-w := workflow.NewWorkflow("MyWorkflow")
-w.SetLogLevel(slog.LevelDebug) // Set logging verbosity
-```
+Workflows run by calling the `w.Run(ctx, initialData)` method, which injects the initial data and triggers the task(s) subscribed to `goflow.StartEvent`. The workflow continues until a task emits `goflow.StopEvent` or an error occurs.
 
-### Tasks
-
-Tasks are the units of work in your workflow. Each task is a function that receives a context and an event.
-
-```go
-w.NewTask(myTaskFunction).Subscribe("trigger_event").SetLabel("task_name")
-```
-
-### Events
-
-Events are the signals that drive the workflow forward. Tasks can subscribe to specific events and emit new ones.
-
-```go
-// Emit an event with data
-ev.Emit("my_event", map[string]any{"key": "value"})
-
-// Access event data in a task
-data := ev.GetString("key")
-```
-
-## Advanced Patterns
-
-### Looping
-
-```go
-func loopTask(ctx context.Context, ev workflow.Event) (string, map[string]any, error) {
-    count := ev.GetInt("counter", 0)
-    if count < 5 {
-        // Loop back by emitting the same event
-        ev.Emit("loop", map[string]any{"counter": count + 1})
-    } else {
-        // Exit the loop
-        ev.Emit("loop_complete", nil)
-    }
-    return nil
-}
-```
-
-### Branching
-
-```go
-func decisionTask(ctx context.Context, ev workflow.Event) (string, map[string]any, error) {
-    value := ev.GetInt("value")
-    if value > 10 {
-        ev.Emit("high_value", ev.Values)
-    } else {
-        ev.Emit("low_value", ev.Values)
-    }
-    return nil
-}
-```
-
-### Concurrent Execution
-
-While the current implementation runs tasks sequentially, you can enable concurrent execution by uncommenting the goroutine in the `Fire` method:
-
-```go
-for _, t := range tasks {
-    go func(task *TaskEntry) {
-        // Task execution...
-    }(t)
-}
-```
-
-### Error Handling
-
-Workflows have built-in error channels for handling exceptions:
-
-```go
-func myTask(ctx context.Context, ev workflow.Event) (string, map[string]any, error) {
-    // If something goes wrong
-    if err := someOperation(); err != nil {
-        return "", nil, err // This will emit an ErrorEvent
-    }
-    return nil
-}
-```
-
-## Best Practices
-
-1. **Give meaningful labels** to tasks for better debugging and logging
-2. **Handle errors** at appropriate levels rather than letting them bubble up
-3. **Set timeouts** using the `MaxDuration` property to prevent hanging workflows
-4. **Use logging** to monitor workflow execution
-5. **Design for idempotency** so tasks can be safely retried
